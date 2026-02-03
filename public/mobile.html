@@ -1,20 +1,90 @@
 <!DOCTYPE html>
-<html>
+<html lang="el">
 <head>
 <meta charset="UTF-8">
 <script src="/socket.io/socket.io.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <style>
-body{font-family:Arial;text-align:center}
-button{width:80px;height:80px;margin:10px;font-size:20px}
-#circles button{opacity:0.4}
-#circles button.enabled{opacity:1}
+body{
+    margin:0;
+    font-family:Arial;
+    background:#1e5b2a;
+    color:white;
+    text-align:center;
+}
+
+h1{
+    margin-top:20px;
+    font-size:28px;
+}
+
+#colors{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+    margin-top:20px;
+}
+
+.colorBtn{
+    width:70px;
+    height:70px;
+    border-radius:50%;
+    margin:12px;
+    border:4px solid white;
+}
+
+#ready{
+    margin-top:20px;
+    padding:12px 30px;
+    font-size:20px;
+    border:none;
+    border-radius:8px;
+    background:#ffd93b;
+}
+
+#status{
+    margin-top:25px;
+    font-size:22px;
+    min-height:30px;
+}
+
+#circles{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+    margin-top:25px;
+}
+
+.circle{
+    width:75px;
+    height:75px;
+    border-radius:50%;
+    margin:12px;
+    font-size:26px;
+    border:4px solid white;
+    background:#333;
+    color:white;
+    opacity:0.4;
+}
+
+.circle.enabled{
+    background:#ffffff;
+    color:black;
+    opacity:1;
+}
 </style>
 </head>
 <body>
 
-<h2 id="status">Διάλεξε χρώμα</h2>
+<h1>Horse Race</h1>
+
 <div id="colors"></div>
+
 <button id="ready" style="display:none">ΕΤΟΙΜΟΣ</button>
+
+<div id="status"></div>
+
 <div id="circles"></div>
 
 <script>
@@ -24,30 +94,40 @@ const colors=["red","blue","yellow","green","purple","orange"];
 let myColor=null;
 let myTurn=false;
 
+const colorsDiv=document.getElementById("colors");
+
+// Δημιουργία κουμπιών χρωμάτων
 colors.forEach(c=>{
- let b=document.createElement("button");
+ let b=document.createElement("div");
+ b.className="colorBtn";
  b.style.background=c;
- b.onclick=()=>socket.emit("choose_color",c);
- document.getElementById("colors").appendChild(b);
+ b.onclick=()=>{
+    socket.emit("choose_color",c);
+ };
+ colorsDiv.appendChild(b);
 });
 
 socket.on("color_ok",()=>{
  myColor = event?.target?.style?.background || myColor;
  document.getElementById("ready").style.display="block";
+ document.getElementById("status").innerText="Πάτησε ΕΤΟΙΜΟΣ";
 });
 
-socket.on("color_taken",()=>alert("Το πήρε άλλος"));
+socket.on("color_taken",()=>{
+ alert("Το χρώμα το πήρε άλλος");
+});
 
 document.getElementById("ready").onclick=()=>{
  socket.emit("player_ready");
+ document.getElementById("status").innerText="Περιμένουμε να ξεκινήσει...";
 };
 
-// 👉 Όταν αλλάζει η σειρά
+// Όταν αλλάζει σειρά
 socket.on("start_turn",(color)=>{
  myTurn = (color === myColor);
 
  document.getElementById("status").innerText =
-   myTurn ? "Η σειρά σου!" : "Περίμενε τη σειρά σου";
+   myTurn ? "Η ΣΕΙΡΑ ΣΟΥ!" : "Περίμενε τη σειρά σου";
 
  renderCircles();
 });
@@ -59,11 +139,12 @@ function renderCircles(){
  for(let i=0;i<6;i++){
    let b=document.createElement("button");
    b.innerText="?";
+   b.className="circle";
 
    if(myTurn){
      b.classList.add("enabled");
      b.onclick=()=>{
-        myTurn=false;     // κλειδώνει αμέσως
+        myTurn=false;
         renderCircles();
         socket.emit("pick_circle",i);
      };
@@ -74,7 +155,7 @@ function renderCircles(){
 }
 
 socket.on("reveal_number",(n)=>{
- document.getElementById("status").innerText="Έβγαλες "+n;
+ document.getElementById("status").innerText="Έβγαλες: "+n;
 });
 </script>
 
