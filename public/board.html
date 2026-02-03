@@ -24,6 +24,12 @@ body{margin:0;overflow:hidden;background:#1e5b2a;font-family:Arial}
  border-radius:8px; z-index:5;
  font-size:18px; line-height:1.4;
 }
+#startBtn{
+ margin-top:8px;
+ padding:6px 10px;
+ font-size:16px;
+ cursor:pointer;
+}
 </style>
 </head>
 <body>
@@ -35,10 +41,11 @@ body{margin:0;overflow:hidden;background:#1e5b2a;font-family:Arial}
   <img id="qrImg">
 </div>
 
-<!-- STATUS -->
+<!-- STATUS / START -->
 <div id="statusBox">
   Παίκτες: <span id="pCount">0</span><br>
-  Έτοιμοι: <span id="rCount">0</span>
+  Έτοιμοι: <span id="rCount">0</span><br>
+  <button id="startBtn">START</button>
 </div>
 
 <script>
@@ -141,7 +148,7 @@ new Phaser.Game({
 <script>
 const overlay=document.getElementById("overlay");
 
-// 👇 Μετρητές Lobby
+// Μετρητές Lobby
 socket.on("update_players",(players)=>{
     const total = Object.keys(players).length;
     const ready = Object.values(players).filter(p=>p.ready).length;
@@ -149,6 +156,11 @@ socket.on("update_players",(players)=>{
     document.getElementById("pCount").innerText = total;
     document.getElementById("rCount").innerText = ready;
 });
+
+// START από το board
+document.getElementById("startBtn").onclick = ()=>{
+    socket.emit("start_game");
+};
 
 socket.on("reveal_order",(order)=>{
     overlay.style.display="flex";
