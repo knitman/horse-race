@@ -5,7 +5,7 @@
 <script src="/socket.io/socket.io.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.js"></script>
 <style>
-body{margin:0;overflow:hidden;background:#1e5b2a;font-family:Arial}
+body{margin:0;overflow:hidden;background:#1e5b2a}
 #overlay{
  position:fixed;inset:0;background:black;color:white;
  display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -13,27 +13,27 @@ body{margin:0;overflow:hidden;background:#1e5b2a;font-family:Arial}
 }
 #qrBox{
  position:fixed;
- top:20px;
- right:20px;
+ top:16px;
+ right:16px;
  background:white;
- padding:15px;
- border-radius:10px;
- text-align:center;
+ padding:8px;
+ border-radius:8px;
  z-index:5;
 }
-#qrBox img{width:180px;height:180px}
-#qrBox p{color:black;font-size:14px;margin:5px 0 0}
+#qrBox img{
+ width:110px;   /* ~40% μικρότερο από πριν */
+ height:110px;
+ display:block;
+}
 </style>
 </head>
 <body>
 
 <div id="overlay"></div>
 
-<!-- QR BOX -->
+<!-- ΜΟΝΟ QR -->
 <div id="qrBox">
   <img id="qrImg">
-  <p>Σκάναρε για να παίξεις</p>
-  <p id="qrText"></p>
 </div>
 
 <script>
@@ -41,11 +41,10 @@ const socket = io();
 let sceneRef;
 const STEP_PX = 13;
 
-// Δημιουργία QR δυναμικά από το URL του site
+// QR δυναμικά για /mobile.html
 const mobileURL = window.location.origin + "/mobile.html";
 document.getElementById("qrImg").src =
   "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent(mobileURL);
-document.getElementById("qrText").innerText = mobileURL;
 
 // Ήχοι
 const sounds = {
@@ -78,6 +77,7 @@ class BoardScene extends Phaser.Scene{
     }
 
     revealLanes(order){
+        // κρύβει το QR μόλις ξεκινήσει το παιχνίδι
         document.getElementById("qrBox").style.display="none";
 
         const map={
