@@ -71,6 +71,8 @@ body{margin:0;overflow:hidden;background:#1e5b2a;font-family:Arial}
 
 <script>
 const socket = io();
+socket.emit("i_am_board"); // 👈 πολύ σημαντικό
+
 let sceneRef;
 const STEP_PX = 13;
 
