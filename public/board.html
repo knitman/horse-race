@@ -20,7 +20,7 @@ body{margin:0;overflow:hidden;background:#1e5b2a;font-family:Arial}
  left:50%;
  top:50%;
  transform:translate(-50%,-50%);
- background:rgba(0,0,0,0.8);
+ background:rgba(0,0,0,0.85);
  color:white;
  padding:30px 60px;
  border-radius:14px;
@@ -79,7 +79,7 @@ const mobileURL = window.location.origin + "/mobile.html";
 document.getElementById("qrImg").src =
   "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent(mobileURL);
 
-// Ήχοι
+// Ήχοι SFX
 const sounds = {
     beep: new Audio("beep.mp3"),
     gallop: new Audio("gallop.mp3"),
@@ -87,6 +87,14 @@ const sounds = {
     win: new Audio("win.mp3")
 };
 function play(n){ sounds[n].currentTime=0; sounds[n].play(); }
+
+// 🎵 Background music
+const bgMusic = new Audio("bg.mp3");
+bgMusic.loop = true;
+bgMusic.volume = 0.25;
+document.body.addEventListener("click", ()=>{
+    bgMusic.play().catch(()=>{});
+}, { once:true });
 
 class BoardScene extends Phaser.Scene{
     constructor(){ super("board"); }
@@ -199,15 +207,12 @@ socket.on("reveal_order",(order)=>{
     },4000);
 });
 
-// 👉 ΜΠΑΡΑ ΣΕΙΡΑΣ
+// Μπάρα σειράς
 socket.on("start_turn",(color)=>{
     play("beep");
     turnBar.innerText = `ΠΑΙΖΕΙ ΤΩΡΑ: ${color.toUpperCase()}`;
     turnBar.style.display="block";
-
-    setTimeout(()=>{
-        turnBar.style.display="none";
-    },2000);
+    setTimeout(()=> turnBar.style.display="none", 2000);
 });
 
 socket.on("move_horse",({color,steps})=>{
