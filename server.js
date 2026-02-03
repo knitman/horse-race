@@ -9,6 +9,7 @@ const io = new Server(server);
 app.use(express.static("public"));
 
 let players = {};
+let boards = new Set();
 let turnOrder = [];
 let currentTurn = 0;
 let circleValues = [];
@@ -19,7 +20,15 @@ function newCircles(){ circleValues = shuffle([1,2,3,4,5,6]); }
 
 io.on("connection",(socket)=>{
 
+    // 👉 Δήλωση αν είναι board
+    socket.on("i_am_board",()=>{
+        boards.add(socket.id);
+    });
+
+    // 👉 Δήλωση αν είναι player
     socket.on("choose_color",(color)=>{
+        if(boards.has(socket.id)) return;
+
         const taken = Object.values(players).find(p=>p.color===color);
         if(!taken){
             players[socket.id]={color,ready:false};
@@ -35,8 +44,10 @@ io.on("connection",(socket)=>{
         }
     });
 
-    // 👇 ΜΟΝΟ από το board
+    // 👉 START μόνο από board
     socket.on("start_game",()=>{
+        if(!boards.has(socket.id)) return;
+
         const readyPlayers = Object.values(players).filter(p=>p.ready);
         if(readyPlayers.length < 2) return;
 
@@ -52,13 +63,14 @@ io.on("connection",(socket)=>{
     });
 
     socket.on("pick_circle",(index)=>{
+        if(!players[socket.id]) return;
+
         const player = players[socket.id];
-        if(!player) return;
-
         const steps = circleValues[index];
-        socket.emit("reveal_number",steps);
 
+        socket.emit("reveal_number",steps);
         horseSteps[player.color]+=steps*13;
+
         io.emit("move_horse",{color:player.color,steps});
     });
 
@@ -80,5 +92,12 @@ io.on("connection",(socket)=>{
         io.emit("start_turn",turnOrder[currentTurn]);
     });
 
+    socket.on("disconnect",()=>{
+        delete players[socket.id];
+        boards.delete(socket.id);
+        io.emit("update_players",players);
+    });
+
 });
+
 server.listen(process.env.PORT || 3000);
