@@ -5,23 +5,49 @@
 <script src="/socket.io/socket.io.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.js"></script>
 <style>
-body{margin:0;overflow:hidden;background:#1e5b2a}
+body{margin:0;overflow:hidden;background:#1e5b2a;font-family:Arial}
 #overlay{
  position:fixed;inset:0;background:black;color:white;
  display:flex;flex-direction:column;align-items:center;justify-content:center;
- font-size:60px;z-index:10;display:none
+ font-size:60px;z-index:10;display:none;text-align:center
 }
+#qrBox{
+ position:fixed;
+ top:20px;
+ right:20px;
+ background:white;
+ padding:15px;
+ border-radius:10px;
+ text-align:center;
+ z-index:5;
+}
+#qrBox img{width:180px;height:180px}
+#qrBox p{color:black;font-size:14px;margin:5px 0 0}
 </style>
 </head>
 <body>
 
 <div id="overlay"></div>
 
+<!-- QR BOX -->
+<div id="qrBox">
+  <img id="qrImg">
+  <p>Σκάναρε για να παίξεις</p>
+  <p id="qrText"></p>
+</div>
+
 <script>
 const socket = io();
 let sceneRef;
 const STEP_PX = 13;
 
+// Δημιουργία QR δυναμικά από το URL του site
+const mobileURL = window.location.origin + "/mobile.html";
+document.getElementById("qrImg").src =
+  "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent(mobileURL);
+document.getElementById("qrText").innerText = mobileURL;
+
+// Ήχοι
 const sounds = {
     beep: new Audio("beep.mp3"),
     gallop: new Audio("gallop.mp3"),
@@ -52,6 +78,8 @@ class BoardScene extends Phaser.Scene{
     }
 
     revealLanes(order){
+        document.getElementById("qrBox").style.display="none";
+
         const map={
             red:0xff6b6b, blue:0x4d96ff, yellow:0xffe66d,
             green:0x6bff95, purple:0xd96bff, orange:0xffa94d
@@ -94,7 +122,7 @@ class BoardScene extends Phaser.Scene{
         });
     }
 
-    resetBoard(){ this.scene.restart(); }
+    resetBoard(){ location.reload(); }
 }
 
 new Phaser.Game({
@@ -141,8 +169,7 @@ socket.on("winner",(color)=>{
 });
 
 socket.on("reset_board",()=>{
-    overlay.style.display="none";
-    sceneRef.resetBoard();
+    location.reload();
 });
 </script>
 
