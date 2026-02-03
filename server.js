@@ -20,12 +20,10 @@ function newCircles(){ circleValues = shuffle([1,2,3,4,5,6]); }
 
 io.on("connection",(socket)=>{
 
-    // 👉 Δήλωση αν είναι board
     socket.on("i_am_board",()=>{
         boards.add(socket.id);
     });
 
-    // 👉 Δήλωση αν είναι player
     socket.on("choose_color",(color)=>{
         if(boards.has(socket.id)) return;
 
@@ -44,12 +42,16 @@ io.on("connection",(socket)=>{
         }
     });
 
-    // 👉 START μόνο από board
     socket.on("start_game",()=>{
         if(!boards.has(socket.id)) return;
 
         const readyPlayers = Object.values(players).filter(p=>p.ready);
         if(readyPlayers.length < 2) return;
+
+        // 🔥 ΤΟ ΚΡΙΣΙΜΟ FIX
+        currentTurn = 0;
+        turnOrder = [];
+        horseSteps = {};
 
         turnOrder = shuffle(readyPlayers.map(p=>p.color));
         turnOrder.forEach(c=>horseSteps[c]=0);
