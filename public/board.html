@@ -2,111 +2,148 @@
 <html lang="el">
 <head>
 <meta charset="UTF-8">
-<title>Horse Race Board</title>
 <script src="/socket.io/socket.io.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.js"></script>
 <style>
-body{
-    margin:0;
-    background:#1e5b2a;
-    font-family:Arial;
-    overflow:hidden;
-}
+body{margin:0;overflow:hidden;background:#1e5b2a}
 #overlay{
-    position:fixed;
-    top:0;
-    left:0;
-    width:100%;
-    height:100%;
-    background:black;
-    color:white;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    font-size:40px;
-    z-index:10;
-}
-canvas{
-    display:block;
-    margin:auto;
+ position:fixed;inset:0;background:black;color:white;
+ display:flex;flex-direction:column;align-items:center;justify-content:center;
+ font-size:60px;z-index:10;display:none
 }
 </style>
 </head>
 <body>
 
-<div id="overlay" style="display:none"></div>
-
-<canvas id="board" width="1200" height="720"></canvas>
+<div id="overlay"></div>
 
 <script>
 const socket = io();
-const canvas = document.getElementById("board");
-const ctx = canvas.getContext("2d");
+let sceneRef;
+const STEP_PX = 13;
 
-const laneY = [190,270,350,430,510,590];
-const startX = 140;
+const sounds = {
+    beep: new Audio("beep.mp3"),
+    gallop: new Audio("gallop.mp3"),
+    tick: new Audio("tick.mp3"),
+    win: new Audio("win.mp3")
+};
+function play(n){ sounds[n].currentTime=0; sounds[n].play(); }
 
-function drawEmptyBoard(){
-    ctx.fillStyle = "#1e5b2a";
-    ctx.fillRect(0,0,1200,720);
+class BoardScene extends Phaser.Scene{
+    constructor(){ super("board"); }
+    preload(){ this.load.image("horse","horse.png"); }
 
-    laneY.forEach((y,i)=>{
-        ctx.fillStyle = "#c9a36a";
-        ctx.fillRect(100, y-35, 980, 70);
+    create(){
+        sceneRef = this;
+        this.startX = 140;
+        this.lanesY = [190,270,350,430,510,590];
+        this.horses = {};
+        this.drawBase();
+    }
 
-        ctx.fillStyle = "white";
-        ctx.font = "22px Arial";
-        ctx.fillText(i+1, 60, y+5);
-    });
+    drawBase(){
+        this.cameras.main.setBackgroundColor("#1e5b2a");
+        this.lanesY.forEach((y)=>{
+            let g=this.add.graphics();
+            g.fillStyle(0xc9a36a);
+            g.fillRect(100,y-35,980,70);
+        });
+    }
+
+    revealLanes(order){
+        const map={
+            red:0xff6b6b, blue:0x4d96ff, yellow:0xffe66d,
+            green:0x6bff95, purple:0xd96bff, orange:0xffa94d
+        };
+
+        order.forEach((color,i)=>{
+            let y=this.lanesY[i];
+            let g=this.add.graphics();
+            g.fillStyle(map[color]);
+            g.fillRect(100,y-35,980,70);
+            let horse=this.add.image(this.startX,y,"horse").setScale(0.09);
+            this.horses[color]=horse;
+        });
+    }
+
+    moveHorse(color,steps){
+        let horse=this.horses[color];
+        play("gallop");
+
+        this.tweens.add({
+            targets:horse,
+            x:horse.x + steps*STEP_PX,
+            duration:400,
+            onComplete: ()=> socket.emit("animation_done",color)
+        });
+
+        const txt = this.add.text(horse.x, horse.y-40, "+"+steps, {
+            font:"48px Arial", color:"#fff",
+            stroke:"#000", strokeThickness:6
+        }).setOrigin(0.5);
+
+        play("tick");
+
+        this.tweens.add({
+            targets: txt,
+            y: horse.y - 80,
+            alpha: 0,
+            duration: 3000,
+            onComplete: ()=> txt.destroy()
+        });
+    }
+
+    resetBoard(){ this.scene.restart(); }
 }
 
-function drawHorse(x,y){
-    ctx.fillStyle = "black";
-    ctx.beginPath();
-    ctx.arc(x, y, 12, 0, Math.PI*2);
-    ctx.fill();
-}
+new Phaser.Game({
+    type:Phaser.AUTO,
+    width:1200,
+    height:720,
+    scene:BoardScene
+});
+</script>
 
-drawEmptyBoard();
+<script>
+const overlay=document.getElementById("overlay");
 
-socket.on("reveal_order", (order) => {
-    const overlay = document.getElementById("overlay");
-    overlay.style.display = "flex";
-    overlay.innerHTML = "<h1>ΚΛΗΡΩΣΗ ΣΕΙΡΑΣ</h1>";
-
-    order.forEach((color, i) => {
-        const line = document.createElement("div");
-        line.innerText = `${i+1}ος: ${color.toUpperCase()}`;
-        overlay.appendChild(line);
+socket.on("reveal_order",(order)=>{
+    overlay.style.display="flex";
+    overlay.innerHTML="<h1>ΚΛΗΡΩΣΗ ΣΕΙΡΑΣ</h1>";
+    order.forEach((c,i)=>{
+        let d=document.createElement("div");
+        d.innerText=`${i+1}ος: ${c}`;
+        overlay.appendChild(d);
     });
 
     setTimeout(()=>{
-        overlay.style.display = "none";
-        revealBoard(order);
+        overlay.style.display="none";
+        sceneRef.revealLanes(order);
     },4000);
 });
 
-function revealBoard(order){
-    const colorMap = {
-        red:"#ff6b6b",
-        blue:"#4d96ff",
-        yellow:"#ffe66d",
-        green:"#6bff95",
-        purple:"#d96bff",
-        orange:"#ffa94d"
-    };
+socket.on("start_turn",(color)=>{
+    play("beep");
+    overlay.style.display="flex";
+    overlay.innerHTML=`ΠΑΙΖΕΙ ΤΩΡΑ: ${color.toUpperCase()}`;
+    setTimeout(()=>overlay.style.display="none",2000);
+});
 
-    drawEmptyBoard();
+socket.on("move_horse",({color,steps})=>{
+    sceneRef.moveHorse(color,steps);
+});
 
-    order.forEach((color,i)=>{
-        const y = laneY[i];
+socket.on("winner",(color)=>{
+    play("win");
+    overlay.style.display="flex";
+    overlay.innerHTML=`🏆 ΝΙΚΗΤΗΣ: ${color.toUpperCase()}`;
+});
 
-        ctx.fillStyle = colorMap[color];
-        ctx.fillRect(100, y-35, 980, 70);
-
-        drawHorse(startX, y);
-    });
-}
+socket.on("reset_board",()=>{
+    overlay.style.display="none";
+    sceneRef.resetBoard();
+});
 </script>
 
 </body>
