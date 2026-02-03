@@ -16,10 +16,6 @@ let horseSteps = {};
 
 function shuffle(a){ return a.sort(()=>Math.random()-0.5); }
 function newCircles(){ circleValues = shuffle([1,2,3,4,5,6]); }
-function allReady(){
-    const list = Object.values(players);
-    return list.length>0 && list.every(p=>p.ready);
-}
 
 io.on("connection",(socket)=>{
 
@@ -36,18 +32,23 @@ io.on("connection",(socket)=>{
         if(players[socket.id]){
             players[socket.id].ready=true;
             io.emit("update_players",players);
-
-            if(allReady()){
-                turnOrder = shuffle(Object.values(players).map(p=>p.color));
-                turnOrder.forEach(c=>horseSteps[c]=0);
-                io.emit("reveal_order",turnOrder);
-
-                setTimeout(()=>{
-                    newCircles();
-                    io.emit("start_turn",turnOrder[currentTurn]);
-                },4000);
-            }
         }
+    });
+
+    // 👇 ΜΟΝΟ από το board
+    socket.on("start_game",()=>{
+        const readyPlayers = Object.values(players).filter(p=>p.ready);
+        if(readyPlayers.length < 2) return;
+
+        turnOrder = shuffle(readyPlayers.map(p=>p.color));
+        turnOrder.forEach(c=>horseSteps[c]=0);
+
+        io.emit("reveal_order",turnOrder);
+
+        setTimeout(()=>{
+            newCircles();
+            io.emit("start_turn",turnOrder[currentTurn]);
+        },4000);
     });
 
     socket.on("pick_circle",(index)=>{
@@ -80,4 +81,4 @@ io.on("connection",(socket)=>{
     });
 
 });
-server.listen(3000,()=>console.log("Server on 3000"));
+server.listen(process.env.PORT || 3000);
