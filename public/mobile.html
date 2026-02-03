@@ -13,50 +13,41 @@ button{width:80px;height:80px;margin:10px;font-size:20px}
 <h2 id="status">Διάλεξε χρώμα</h2>
 <div id="colors"></div>
 <button id="ready" style="display:none">ΕΤΟΙΜΟΣ</button>
-
-<div id="circles" style="display:none"></div>
+<div id="circles"></div>
 
 <script>
-const socket = io();
-
-const colors = ["red","blue","yellow","green","purple","orange"];
-const container = document.getElementById("colors");
-const circlesDiv = document.getElementById("circles");
+const socket=io();
+const colors=["red","blue","yellow","green","purple","orange"];
 
 colors.forEach(c=>{
-    let btn = document.createElement("button");
-    btn.style.background = c;
-    btn.onclick = ()=> socket.emit("choose_color", c);
-    container.appendChild(btn);
+ let b=document.createElement("button");
+ b.style.background=c;
+ b.onclick=()=>socket.emit("choose_color",c);
+ document.getElementById("colors").appendChild(b);
 });
 
-socket.on("color_ok", ()=>{
-    document.getElementById("ready").style.display="block";
+socket.on("color_ok",()=>{
+ document.getElementById("ready").style.display="block";
 });
 
-socket.on("color_taken", ()=> alert("Το πήρε άλλος"));
-
-document.getElementById("ready").onclick = ()=>{
-    socket.emit("player_ready");
+document.getElementById("ready").onclick=()=>{
+ socket.emit("player_ready");
 };
 
-socket.on("start_turns", (color)=>{
-    document.getElementById("status").innerText =
-        "Η σειρά σου! Διάλεξε κύκλο";
-    circlesDiv.style.display="block";
-    circlesDiv.innerHTML="";
-
-    for(let i=0;i<6;i++){
-        let c = document.createElement("button");
-        c.innerText="?";
-        c.onclick = ()=> socket.emit("pick_circle", i);
-        circlesDiv.appendChild(c);
-    }
+socket.on("start_turn",()=>{
+ document.getElementById("status").innerText="Η σειρά σου!";
+ const div=document.getElementById("circles");
+ div.innerHTML="";
+ for(let i=0;i<6;i++){
+   let b=document.createElement("button");
+   b.innerText="?";
+   b.onclick=()=>socket.emit("pick_circle",i);
+   div.appendChild(b);
+ }
 });
 
-socket.on("reveal_number", (num)=>{
-    document.getElementById("status").innerText =
-        "Έβγαλες: " + num;
+socket.on("reveal_number",(n)=>{
+ document.getElementById("status").innerText="Έβγαλες "+n;
 });
 </script>
 
