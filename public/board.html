@@ -5,25 +5,24 @@
 <script src="/socket.io/socket.io.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.js"></script>
 <style>
-body{margin:0;overflow:hidden;background:#1e5b2a}
+body{margin:0;overflow:hidden;background:#1e5b2a;font-family:Arial}
 #overlay{
  position:fixed;inset:0;background:black;color:white;
  display:flex;flex-direction:column;align-items:center;justify-content:center;
  font-size:60px;z-index:10;display:none;text-align:center
 }
 #qrBox{
- position:fixed;
- top:16px;
- right:16px;
- background:white;
- padding:8px;
- border-radius:8px;
- z-index:5;
+ position:fixed; top:16px; right:16px;
+ background:white; padding:8px; border-radius:8px; z-index:5;
 }
-#qrBox img{
- width:110px;   /* ~40% μικρότερο από πριν */
- height:110px;
- display:block;
+#qrBox img{ width:110px; height:110px; display:block; }
+
+#statusBox{
+ position:fixed; top:16px; left:16px;
+ background:rgba(0,0,0,0.6);
+ color:white; padding:10px 14px;
+ border-radius:8px; z-index:5;
+ font-size:18px; line-height:1.4;
 }
 </style>
 </head>
@@ -31,9 +30,15 @@ body{margin:0;overflow:hidden;background:#1e5b2a}
 
 <div id="overlay"></div>
 
-<!-- ΜΟΝΟ QR -->
+<!-- QR -->
 <div id="qrBox">
   <img id="qrImg">
+</div>
+
+<!-- STATUS -->
+<div id="statusBox">
+  Παίκτες: <span id="pCount">0</span><br>
+  Έτοιμοι: <span id="rCount">0</span>
 </div>
 
 <script>
@@ -41,7 +46,7 @@ const socket = io();
 let sceneRef;
 const STEP_PX = 13;
 
-// QR δυναμικά για /mobile.html
+// QR για /mobile.html
 const mobileURL = window.location.origin + "/mobile.html";
 document.getElementById("qrImg").src =
   "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent(mobileURL);
@@ -77,8 +82,8 @@ class BoardScene extends Phaser.Scene{
     }
 
     revealLanes(order){
-        // κρύβει το QR μόλις ξεκινήσει το παιχνίδι
         document.getElementById("qrBox").style.display="none";
+        document.getElementById("statusBox").style.display="none";
 
         const map={
             red:0xff6b6b, blue:0x4d96ff, yellow:0xffe66d,
@@ -135,6 +140,15 @@ new Phaser.Game({
 
 <script>
 const overlay=document.getElementById("overlay");
+
+// 👇 Μετρητές Lobby
+socket.on("update_players",(players)=>{
+    const total = Object.keys(players).length;
+    const ready = Object.values(players).filter(p=>p.ready).length;
+
+    document.getElementById("pCount").innerText = total;
+    document.getElementById("rCount").innerText = ready;
+});
 
 socket.on("reveal_order",(order)=>{
     overlay.style.display="flex";
