@@ -13,19 +13,12 @@ body{
     color:white;
     text-align:center;
 }
-
-h1{
-    margin-top:20px;
-    font-size:28px;
-}
-
 #colors{
     display:flex;
     flex-wrap:wrap;
     justify-content:center;
-    margin-top:20px;
+    margin-top:30px;
 }
-
 .colorBtn{
     width:70px;
     height:70px;
@@ -33,7 +26,6 @@ h1{
     margin:12px;
     border:4px solid white;
 }
-
 #ready{
     margin-top:20px;
     padding:12px 30px;
@@ -42,20 +34,17 @@ h1{
     border-radius:8px;
     background:#ffd93b;
 }
-
 #status{
     margin-top:25px;
     font-size:22px;
     min-height:30px;
 }
-
 #circles{
     display:flex;
     flex-wrap:wrap;
     justify-content:center;
     margin-top:25px;
 }
-
 .circle{
     width:75px;
     height:75px;
@@ -67,9 +56,8 @@ h1{
     color:white;
     opacity:0.4;
 }
-
 .circle.enabled{
-    background:#ffffff;
+    background:#fff;
     color:black;
     opacity:1;
 }
@@ -77,14 +65,10 @@ h1{
 </head>
 <body>
 
-<h1>Horse Race</h1>
-
+<h2>Διάλεξε Χρώμα</h2>
 <div id="colors"></div>
-
 <button id="ready" style="display:none">ΕΤΟΙΜΟΣ</button>
-
 <div id="status"></div>
-
 <div id="circles"></div>
 
 <script>
@@ -94,21 +78,19 @@ const colors=["red","blue","yellow","green","purple","orange"];
 let myColor=null;
 let myTurn=false;
 
-const colorsDiv=document.getElementById("colors");
-
-// Δημιουργία κουμπιών χρωμάτων
+// δημιουργία κουμπιών
 colors.forEach(c=>{
  let b=document.createElement("div");
  b.className="colorBtn";
  b.style.background=c;
  b.onclick=()=>{
+    myColor=c;                     // ✅ ΣΩΣΤΟ
     socket.emit("choose_color",c);
  };
- colorsDiv.appendChild(b);
+ document.getElementById("colors").appendChild(b);
 });
 
 socket.on("color_ok",()=>{
- myColor = event?.target?.style?.background || myColor;
  document.getElementById("ready").style.display="block";
  document.getElementById("status").innerText="Πάτησε ΕΤΟΙΜΟΣ";
 });
@@ -119,10 +101,10 @@ socket.on("color_taken",()=>{
 
 document.getElementById("ready").onclick=()=>{
  socket.emit("player_ready");
- document.getElementById("status").innerText="Περιμένουμε να ξεκινήσει...";
+ document.getElementById("status").innerText="Περιμένουμε START...";
 };
 
-// Όταν αλλάζει σειρά
+// σειρά
 socket.on("start_turn",(color)=>{
  myTurn = (color === myColor);
 
