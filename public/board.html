@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<title>Horse Race Board</title>
+<script src="/socket.io/socket.io.js"></script>
+<style>
+body{
+    margin:0;
+    background:#1e5b2a;
+    font-family:Arial;
+    overflow:hidden;
+}
+#overlay{
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:black;
+    color:white;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    font-size:40px;
+    z-index:10;
+}
+canvas{
+    display:block;
+    margin:auto;
+}
+</style>
+</head>
+<body>
+
+<div id="overlay" style="display:none"></div>
+
+<canvas id="board" width="1200" height="720"></canvas>
+
+<script>
+const socket = io();
+const canvas = document.getElementById("board");
+const ctx = canvas.getContext("2d");
+
+const laneY = [190,270,350,430,510,590];
+const startX = 140;
+
+function drawEmptyBoard(){
+    ctx.fillStyle = "#1e5b2a";
+    ctx.fillRect(0,0,1200,720);
+
+    laneY.forEach((y,i)=>{
+        ctx.fillStyle = "#c9a36a";
+        ctx.fillRect(100, y-35, 980, 70);
+
+        ctx.fillStyle = "white";
+        ctx.font = "22px Arial";
+        ctx.fillText(i+1, 60, y+5);
+    });
+}
+
+function drawHorse(x,y){
+    ctx.fillStyle = "black";
+    ctx.beginPath();
+    ctx.arc(x, y, 12, 0, Math.PI*2);
+    ctx.fill();
+}
+
+drawEmptyBoard();
+
+socket.on("reveal_order", (order) => {
+    const overlay = document.getElementById("overlay");
+    overlay.style.display = "flex";
+    overlay.innerHTML = "<h1>ΚΛΗΡΩΣΗ ΣΕΙΡΑΣ</h1>";
+
+    order.forEach((color, i) => {
+        const line = document.createElement("div");
+        line.innerText = `${i+1}ος: ${color.toUpperCase()}`;
+        overlay.appendChild(line);
+    });
+
+    setTimeout(()=>{
+        overlay.style.display = "none";
+        revealBoard(order);
+    },4000);
+});
+
+function revealBoard(order){
+    const colorMap = {
+        red:"#ff6b6b",
+        blue:"#4d96ff",
+        yellow:"#ffe66d",
+        green:"#6bff95",
+        purple:"#d96bff",
+        orange:"#ffa94d"
+    };
+
+    drawEmptyBoard();
+
+    order.forEach((color,i)=>{
+        const y = laneY[i];
+
+        ctx.fillStyle = colorMap[color];
+        ctx.fillRect(100, y-35, 980, 70);
+
+        drawHorse(startX, y);
+    });
+}
+</script>
+
+</body>
+</html>

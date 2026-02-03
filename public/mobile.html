@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<script src="/socket.io/socket.io.js"></script>
+<style>
+body{font-family:Arial;text-align:center}
+button{width:80px;height:80px;margin:10px;font-size:20px}
+</style>
+</head>
+<body>
+
+<h2 id="status">Διάλεξε χρώμα</h2>
+<div id="colors"></div>
+<button id="ready" style="display:none">ΕΤΟΙΜΟΣ</button>
+
+<div id="circles" style="display:none"></div>
+
+<script>
+const socket = io();
+
+const colors = ["red","blue","yellow","green","purple","orange"];
+const container = document.getElementById("colors");
+const circlesDiv = document.getElementById("circles");
+
+colors.forEach(c=>{
+    let btn = document.createElement("button");
+    btn.style.background = c;
+    btn.onclick = ()=> socket.emit("choose_color", c);
+    container.appendChild(btn);
+});
+
+socket.on("color_ok", ()=>{
+    document.getElementById("ready").style.display="block";
+});
+
+socket.on("color_taken", ()=> alert("Το πήρε άλλος"));
+
+document.getElementById("ready").onclick = ()=>{
+    socket.emit("player_ready");
+};
+
+socket.on("start_turns", (color)=>{
+    document.getElementById("status").innerText =
+        "Η σειρά σου! Διάλεξε κύκλο";
+    circlesDiv.style.display="block";
+    circlesDiv.innerHTML="";
+
+    for(let i=0;i<6;i++){
+        let c = document.createElement("button");
+        c.innerText="?";
+        c.onclick = ()=> socket.emit("pick_circle", i);
+        circlesDiv.appendChild(c);
+    }
+});
+
+socket.on("reveal_number", (num)=>{
+    document.getElementById("status").innerText =
+        "Έβγαλες: " + num;
+});
+</script>
+
+</body>
+</html>

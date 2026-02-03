@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8" />
+<title>PHOTO FINISH – Real Horses</title>
+<script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.js"></script>
+<style>
+body{margin:0;background:#0e0e1a;color:white;text-align:center;font-family:Arial;}
+</style>
+</head>
+<body>
+
+<h1 style="margin:10px;letter-spacing:4px;">🏁 PHOTO FINISH 🏁</h1>
+<h3>SPACE = Ζάρι | R = Restart</h3>
+<h3 id="msg"></h3>
+
+<script>
+class GameScene extends Phaser.Scene {
+    constructor(){ super("game"); }
+
+    preload(){
+        this.load.image('horse','horse.png'); // το αρχείο που έσωσες
+    }
+
+    create(){
+        this.cameras.main.setBackgroundColor('#0f0f1f');
+
+        this.startX = 160;
+        this.finishX = 960;
+
+        // ---------- LANES ----------
+        this.lanesY = [];
+        for(let i=0;i<6;i++){
+            let y = 180 + i*65;
+            this.lanesY.push(y);
+
+            let lane = this.add.graphics();
+            lane.fillStyle(0x8b5a2b);
+            lane.fillRect(120, y-28, 860, 56);
+
+            lane.lineStyle(2, 0x5a3815);
+            lane.strokeRect(120, y-28, 860, 56);
+
+            this.add.text(70, y-14, (i+1).toString(), {font:'22px Arial', fill:'#fff'});
+        }
+
+        // finish line
+        let finish = this.add.graphics();
+        finish.fillStyle(0xff2222);
+        finish.fillRect(this.finishX, 150, 10, 420);
+
+        // ---------- HORSES ----------
+        this.horses = [];
+        for(let i=0;i<6;i++){
+            let horse = this.add.image(this.startX, this.lanesY[i], 'horse')
+                .setScale(0.18)
+                .setOrigin(0.5);
+
+            // διαφορετικό χρώμα σε κάθε lane
+            horse.setTint(Phaser.Display.Color.HSLToColor(i/6,0.7,0.6).color);
+
+            horse.posX = this.startX;
+            this.horses.push(horse);
+        }
+
+        // ---------- DICE UI ----------
+        this.diceBox = this.add.graphics();
+        this.diceBox.fillStyle(0xffffff);
+        this.diceBox.fillRoundedRect(500,50,90,90,12);
+
+        this.diceDots = this.add.graphics();
+
+        this.winner = null;
+
+        this.input.keyboard.on('keydown-SPACE', ()=> this.rollDice());
+        this.input.keyboard.on('keydown-R', ()=> this.resetGame());
+    }
+
+    drawDice(value){
+        this.diceDots.clear();
+        this.diceDots.fillStyle(0x000000);
+
+        const cx = 545, cy = 95;
+        const d = 14;
+
+        const dots = {
+            1: [[0,0]],
+            2: [[-d,-d],[d,d]],
+            3: [[-d,-d],[0,0],[d,d]],
+            4: [[-d,-d],[d,-d],[-d,d],[d,d]],
+            5: [[-d,-d],[d,-d],[0,0],[-d,d],[d,d]],
+            6: [[-d,-d],[d,-d],[-d,0],[d,0],[-d,d],[d,d]]
+        };
+
+        dots[value].forEach(p=>{
+            this.diceDots.fillCircle(cx+p[0], cy+p[1], 6);
+        });
+    }
+
+    rollDice(){
+        if(this.winner) return;
+
+        let dice = Phaser.Math.Between(1,6);
+        this.drawDice(dice);
+
+        let horse = this.horses[dice-1];
+        horse.posX += 85;
+
+        this.tweens.add({
+            targets: horse,
+            x: horse.posX,
+            duration: 400,
+            ease: 'Sine.easeInOut'
+        });
+
+        if(horse.posX >= this.finishX){
+            this.winner = dice;
+            document.getElementById("msg").innerText =
+                "🏆 Νίκησε το Άλογο " + dice + " !";
+        }
+    }
+
+    resetGame(){
+        this.horses.forEach((h,i)=>{
+            h.posX = this.startX;
+            h.x = this.startX;
+        });
+        this.diceDots.clear();
+        this.winner = null;
+        document.getElementById("msg").innerText="";
+    }
+}
+
+new Phaser.Game({
+    type: Phaser.AUTO,
+    width:1150,
+    height:700,
+    scene: GameScene
+});
+</script>
+
+</body>
+</html>
